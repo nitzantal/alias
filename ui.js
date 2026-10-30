@@ -94,21 +94,24 @@
   }
 
   /* ---------- קומפוננטות הגדרה ---------- */
-  function stepper(key, label, { min, max, step = 1, suffix = "", format } = {}, rerender) {
+  function stepper(key, label, { min, max, step = 1, suffix = "", format, get, set: setValue } = {}, rerender) {
     const s = Settings.get();
-    const value = h("span", { class: "stepper-value" }, format ? format(s[key]) : s[key] + suffix);
-    const set = (delta) => {
-      s[key] = Math.min(max, Math.max(min, s[key] + delta));
+    const read = () => (get ? get() : s[key]);
+    const paint = () => (format ? format(read()) : read() + suffix);
+    const value = h("span", { class: "stepper-value" }, paint());
+    const change = (delta) => {
+      const next = Math.min(max, Math.max(min, read() + delta));
+      if (setValue) setValue(next); else s[key] = next;
       Settings.save();
-      value.textContent = format ? format(s[key]) : s[key] + suffix;
+      value.textContent = paint();
       if (rerender) rerender();
     };
     return h("div", { class: "row" },
       h("span", { class: "row-label" }, label),
       h("div", { class: "stepper" },
-        h("button", { type: "button", "aria-label": "הפחת", onclick: () => set(-step) }, "−"),
+        h("button", { type: "button", "aria-label": "הפחת", onclick: () => change(-step) }, "−"),
         value,
-        h("button", { type: "button", "aria-label": "הוסף", onclick: () => set(step) }, "+")));
+        h("button", { type: "button", "aria-label": "הוסף", onclick: () => change(step) }, "+")));
   }
 
   function segmented(key, label, options, rerender) {
@@ -190,26 +193,15 @@
       });
       fill(secs.teams, 
         h("h2", {}, "קבוצות"),
-        stepper("teams", "מספר קבוצות", { min: 2, max: 8 }, null),
+        stepper("teams", "מספר קבוצות", { min: 2, max: 8, get: () => s.teams.length, set: resizeTeams }, drawTeams),
         list,
         h("p", { class: "hint" }, "לחצו על העיגול או על האימוג׳י כדי להחליף צבע ודמות."));
-      // מספר הקבוצות הוא אורך המערך, לכן הכפתורים מטופלים בנפרד
-      const row = secs.teams.querySelector(".stepper");
-      const valueEl = row.querySelector(".stepper-value");
-      valueEl.textContent = String(s.teams.length);
-      const [minus, , plus] = row.children;
-      minus.onclick = () => resizeTeams(-1);
-      plus.onclick = () => resizeTeams(1);
     }
 
-    function resizeTeams(delta) {
+    function resizeTeams(n) {
       const s = Settings.get();
-      const [min, max] = Settings.LIMITS.teams;
-      const n = Math.min(max, Math.max(min, s.teams.length + delta));
       while (s.teams.length < n) s.teams.push(Settings.defaultTeam(s.teams.length));
       s.teams.length = n;
-      Settings.save();
-      drawTeams();
     }
 
     function drawRules() {
