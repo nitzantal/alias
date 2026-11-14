@@ -245,7 +245,9 @@
             else if (cats.length - s.disabledCategories.length > 1) s.disabledCategories.push(c);
             Settings.save(); drawWords();
           })))),
-        h("p", { class: count < 30 ? "hint warn" : "hint" }, `${count} מילים זמינות לפי הבחירה`),
+        h("p", { class: count < 30 ? "hint warn" : "hint" }, items.length === 0
+          ? "לא נטענו מילים. כנראה יש שגיאה בקובץ המילים (words-alias-he.js), למשל גרש חסר או סוגריים."
+          : `${count} מילים זמינות לפי הבחירה`),
         h("button", { type: "button", class: "secondary", onclick: openWordsEditor }, "✏️ עריכת מאגר המילים"));
     }
 
